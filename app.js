@@ -1,40 +1,62 @@
-var express = require('express');
-var path = require('path');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var mongoose = require('mongoose');
-var cors = require('cors');
+const express = require('express');
+const path = require('path');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const session = require('express-session');
+const MongoStore = require('connect-mongo')(session);
+const passport = require('passport');
 
-var task = require('./routes/task');
-var response = require('./helpers/response');
+const response = require('./helpers/response');
+const configure = require('./config/passport');
+const auth = require('./routes/auth');
+const task = require('./routes/task');
 
-var app = express();
+const app = express();
 
 mongoose.connect('mongodb://localhost/app-todo-db');
 
-app.use(cors());
+app.use(session({
+  secret: 'todo-app',
+  resave: true,
+  saveUninitialized: true,
+  store: new MongoStore({
+    mongooseConnection: mongoose.connection
+  })
+}));
+
+app.use(cors({
+  credentials: true,
+  origin: ['http://localhost:4200']
+}));
+
+configure(passport);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
+app.use('/auth', auth);
 app.use('/task', task);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-    response.notFound(res);
+  response.notFound(req, res);
 });
 
 // error handler
 app.use(function(err, req, res, next) {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
-    // render the error page
-    if (!res.headersSent) {
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-        response.unexpectedError(req, res, err);
-    }
+  if (!res.headersSent) {
+    response.unexpectedError(req, res, err);
+  }
 });
 
 module.exports = app;

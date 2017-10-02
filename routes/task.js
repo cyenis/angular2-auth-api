@@ -1,38 +1,34 @@
-var express = require('express');
-var router = express.Router();
-var Task = require('../models/task').Task;
-var response = require('../helpers/response');
+const express = require('express');
+const router = express.Router();
 
-//Todo List
-router.get('/', function(req, res, next) {
+const response = require('../helpers/response');
+const requireAuthentication = require('../middlewares/require-authentication');
+const Task = require('../models/task').Task;
 
-  Task.find({}, (err, data) => {
-    if(err){
-      response.unexpectedError(res);
-      return;
+router.use(requireAuthentication);
+
+router.get('/', (req, res, next) => {
+  Task.find({}, (err, tasks) => {
+    if (err) {
+      return next(res);
     }
-    res.json(data);
+    let data = tasks.map((task) => new Task(task));
+    return response.data(req, res, data);
   });
 });
 
-router.get('/:id', function(req, res, next) {
+router.get('/:id', (req, res, next) => {
   if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-    response.notFound(res);
-    return;
+    return response.notFound(req, res);
   }
-  Task.findById(req.params.id, (err, data) => {
-
-    if(err){
-      response.unexpectedError(req, res, err);
-      return;
+  Task.findById(req.params.id, (err, task) => {
+    if (err) {
+      return next(err);
     }
-
-    if(!data){
-      response.notFound(res);
-      return;
+    if (!task) {
+      return response.notFound(req, res);
     }
-
-    res.json(data);
+    return response.data(req, res, task.asData());
   });
 });
 
