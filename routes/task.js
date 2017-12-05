@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const response = require('../helpers/response');
-const requireAuthentication = require('../middlewares/require-authentication');
 const Task = require('../models/task').Task;
 
-router.use(requireAuthentication);
-
 router.get('/', (req, res, next) => {
+  if (!req.user) {
+    return response.forbidden();
+  }
   Task.find({}, (err, tasks) => {
     if (err) {
       return next(res);
@@ -18,6 +18,9 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/:id', (req, res, next) => {
+  if (!req.user) {
+    return response.forbidden();
+  }
   if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
     return response.notFound(req, res);
   }

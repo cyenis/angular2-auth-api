@@ -1,4 +1,3 @@
-const express = require('express');
 const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
@@ -15,12 +14,12 @@ const taskSchema = new Schema({
   }
 });
 
-taskSchema.methods.asData = function() {
+taskSchema.methods.asData = function () {
   return {
     id: this._id,
     status: this.status,
     priority: this.priority
-  }
+  };
 };
 
 const Task = mongoose.model('Task', taskSchema);

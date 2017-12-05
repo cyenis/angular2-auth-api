@@ -7,6 +7,9 @@ const response = require('../helpers/response');
 const User = require('../models/user').User;
 
 router.post('/login', (req, res, next) => {
+  if (req.user) {
+    return response.forbidden();
+  }
   passport.authenticate('local', (err, user, info) => {
     if (err) {
       return next(err);
@@ -24,6 +27,9 @@ router.post('/login', (req, res, next) => {
 });
 
 router.post('/signup', (req, res, next) => {
+  if (req.user) {
+    return response.forbidden();
+  }
   const {
     username,
     email,
@@ -79,9 +85,8 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/me', (req, res) => {
-  if (req.isAuthenticated()) {
-    let user = req.user;
-    return response.data(req, res, user.asData());
+  if (req.user) {
+    return response.data(req, res, req.user.asData());
   }
 
   return response.notFound(req, res);

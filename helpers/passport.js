@@ -1,9 +1,10 @@
+const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
 
 const User = require('../models/user').User;
 
-function configure(passport) {
+function configurePassport () {
   passport.serializeUser((user, done) => {
     done(null, user);
   });
@@ -36,6 +37,8 @@ function configure(passport) {
       return next(null, user);
     });
   }));
+
+  return passport;
 }
 
-module.exports = configure;
+module.exports = configurePassport;

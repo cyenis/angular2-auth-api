@@ -17,20 +17,20 @@ const UserSchema = new Schema({
   }
 });
 
-UserSchema.methods.generateHash = function(password) {
+UserSchema.methods.generateHash = (password) => {
   return bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
 };
 
-UserSchema.methods.validPassword = function(password) {
+UserSchema.methods.validPassword = (password) => {
   return bcrypt.compareSync(password, this.password);
 };
 
-UserSchema.methods.asData = function() {
+UserSchema.methods.asData = function () {
   return {
     id: this._id,
     username: this.username,
     email: this.email
-  }
+  };
 };
 
 const User = mongoose.model('User', UserSchema);

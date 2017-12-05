@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
@@ -7,33 +6,42 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
-const passport = require('passport');
 
 const response = require('./helpers/response');
-const configure = require('./config/passport');
+const configurePassport = require('./helpers/passport');
 const auth = require('./routes/auth');
 const task = require('./routes/task');
 
 const app = express();
 
-mongoose.connect('mongodb://localhost/app-todo-db');
+mongoose.Promise = Promise;
+mongoose.connect('mongodb://localhost/app-todo', {
+  keepAlive: true,
+  reconnectTries: Number.MAX_VALUE,
+  useMongoClient: true
+});
 
-app.use(session({
-  secret: 'todo-app',
-  resave: true,
-  saveUninitialized: true,
-  store: new MongoStore({
-    mongooseConnection: mongoose.connection
-  })
-}));
+// -- setup the app
 
 app.use(cors({
   credentials: true,
   origin: ['http://localhost:4200']
 }));
 
-configure(passport);
+app.use(session({
+  store: new MongoStore({
+    mongooseConnection: mongoose.connection,
+    ttl: 24 * 60 * 60 // 1 day
+  }),
+  secret: 'todo-app',
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
 
+const passport = configurePassport();
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -41,19 +49,23 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
+// -- routes
+
 app.use('/auth', auth);
 app.use('/task', task);
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
+// -- 404 and error handler
+
+app.use(function (req, res, next) {
   response.notFound(req, res);
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+// NOTE: requires a views/error.ejs template
+app.use(function (err, req, res, next) {
+  // always log the error
+  console.error('ERROR', req.method, req.path, err);
 
+  // only send if the error ocurred before sending the response
   if (!res.headersSent) {
     response.unexpectedError(req, res, err);
   }
