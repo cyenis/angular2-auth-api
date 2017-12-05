@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const bcrypt = require('bcrypt');
 
 const UserSchema = new Schema({
   username: {
@@ -16,14 +15,6 @@ const UserSchema = new Schema({
     required: [true, 'Password is required']
   }
 });
-
-UserSchema.methods.generateHash = (password) => {
-  return bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
-};
-
-UserSchema.methods.validPassword = (password) => {
-  return bcrypt.compareSync(password, this.password);
-};
 
 UserSchema.methods.asData = function () {
   return {
